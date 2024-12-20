@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>File Upload</title>
+</head>
+<body>
+  <form id="upload-form">
+    <input type="file" id="file-upload" />
+    <button type="submit">Upload File</button>
+  </form>
+
+  <script>
+    document.getElementById('upload-form').addEventListener('submit', function (e) {
+      e.preventDefault();
+      uploadFile();
+    });
+
+    async function uploadFile() {
+      const fileInput = document.getElementById('file-upload');
+      const file = fileInput.files[0];
+      const chunkSize = 10 * 1024 * 1024; // 10MB per chunk
+      const totalChunks = Math.ceil(file.size / chunkSize); // Calculate total chunks
+
+      if (!file) {
+        alert('Please select a file!');
+        return;
+      }
+
+      let start = 0;
+      const fileExtension = file.name.split('.').pop(); // Get the file extension
+      const fileId = 'uniqueFileId123'; // Replace with actual unique ID for the file
+
+      // Split the file into chunks and upload
+      while (start < file.size) {
+        const chunk = file.slice(start, start + chunkSize);
+        const chunkIndex = Math.floor(start / chunkSize) + 1;
+
+        // Prepare form data to send to the backend
+        const formData = new FormData();
+        formData.append('file', chunk);
+        formData.append('fileId', fileId);  // Unique ID for the file
+        formData.append('chunkIndex', chunkIndex);
+        formData.append('totalChunks', totalChunks);
+        formData.append('fileExtension', fileExtension);  // Send the file extension to the backend
+
+        await uploadChunk(formData);
+
+        start += chunkSize;
+      }
+    }
+
+    async function uploadChunk(formData) {
+      try {
+        const response = await fetch('upload_with_chunk.php', {
+          method: 'POST',
+          body: formData,
+        });
+
+        if (!response.ok) {
+          throw new Error('Network response was not ok');
+        }
+
+        const data = await response.json();
+        console.log(data.message);
+      } catch (error) {
+        console.error('Error uploading chunk:', error);
+      }
+    }
+  </script>
+</body>
+</html>
